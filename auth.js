@@ -23,7 +23,7 @@ window.hwAuth={
  takeConfirmedSignup(){if(sessionStorage.getItem(CONFIRMED)==='1'){sessionStorage.removeItem(CONFIRMED);return true}return false},
  storedUserId(){return session()?.user_id||null},hasCallbackError(){return !!error},callbackError(){return error},verifySession,
  async emailLogin(email,password){email=validEmail(email);validPassword(password);const s=await request('token?grant_type=password','POST',{email,password});await finish(s);return 'Signing in…'},
- async emailSignup(email,password){email=validEmail(email);validPassword(password);const s=await request('signup','POST',{email,password,options:{email_redirect_to:redirect}});if(s.access_token)await finish(s);return 'Account requested. Check your email and follow the confirmation link, then sign in.'},
+ async emailSignup(email,password){email=validEmail(email);validPassword(password);const s=await request('signup?redirect_to='+encodeURIComponent(redirect),'POST',{email,password});if(s.access_token)await finish(s);return 'Account requested. Check your email and follow the confirmation link, then sign in.'},
  async googleLogin(){if(!navigator.onLine)throw Error('Google sign-in requires an internet connection.');location.href=URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(redirect);return 'Opening Google…'},
  async resetPassword(email){email=validEmail(email);await request('recover','POST',{email,gotrue:true});return 'If this email has an account, check your inbox for recovery instructions.'},
  async signOut(){const s=session();clear();if(s?.access_token&&navigator.onLine)try{await request('logout','POST',{},s.access_token)}catch(e){} }
