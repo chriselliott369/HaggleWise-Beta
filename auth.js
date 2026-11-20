@@ -1,6 +1,6 @@
 /* HaggleWise Beta 6: public publishable key only, no server secrets. */
 (()=>{'use strict';
-const URL='https://rpuzdciyumercilklkffw.supabase.co';
+const URL='https://rpuzdciyumerclklkffw.supabase.co';
 const KEY='sb_publishable_7ZaECXi_ziM6KBt6uARowQ_2JXIP20E';
 const STORE='hw-beta6-auth-session';
 const redirect=location.origin+location.pathname;
