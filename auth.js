@@ -1,4 +1,4 @@
-/* HaggleWise Beta 8: public publishable key only, no server secrets. */
+/* HaggleWise Beta 9: public publishable key only, no server secrets. */
 (()=>{'use strict';
 const URL='https://rpuzdciyumerclklkffw.supabase.co';
 const KEY='sb_publishable_7ZaECXi_ziM6KBt6uARowQ_2JXIP20E';
