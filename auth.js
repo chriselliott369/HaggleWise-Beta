@@ -16,7 +16,47 @@ if(hash.get('access_token')&&hash.get('refresh_token')){if(hash.get('type')==='s
 else if(query.get('code')){try{if(query.get('type')==='signup')sessionStorage.setItem(CONFIRMED,'1');const s=await request('token?grant_type=pkce','POST',{auth_code:query.get('code'),code_verifier:sessionStorage.getItem('hw-pkce-verifier')});save(s)}catch(e){sessionStorage.removeItem(CONFIRMED);error=e.message}history.replaceState(null,'',redirect)}
 }
 const callbackPromise=callback();
-async function verifySession(){await callbackPromise;let s=session();if(!s)return null;try{if(s.expires_at&&s.expires_at<Math.floor(Date.now()/1000)+90){s=await request('token?grant_type=refresh_token','POST',{refresh_token:s.refresh_token});s.expires_at=Math.floor(Date.now()/1000)+Number(s.expires_in||3600);save(s)}const user=await request('user','GET',null,s.access_token);if(!user.id)throw Error('Account could not be verified');if(s.user_id!==user.id){s.user_id=user.id;save(s);location.replace(redirect);return null}return user}catch(e){if(!navigator.onLine){throw Error('Connect to the internet to verify your account. Your device data is still here.')}clear();throw Error('Session expired. Please sign in again.')}}
+// Beta 16: only a previously server-verified account may reopen offline.
+// Never use an unverified token or a guest session as an offline login.
+async function verifySession(){
+ await callbackPromise;
+ let s=session();
+ if(!s)return null;
+ if(!navigator.onLine){
+   if(s.user_id && s.verified_email){
+     return {id:s.user_id,email:s.verified_email,offline:true};
+   }
+   throw Error('Connect to the internet once to verify your account before using it offline.');
+ }
+ try{
+   if(s.expires_at && s.expires_at<Math.floor(Date.now()/1000)+90){
+     const refreshed=await request('token?grant_type=refresh_token','POST',{refresh_token:s.refresh_token});
+     s={...s,...refreshed,expires_at:Math.floor(Date.now()/1000)+Number(refreshed.expires_in||3600)};
+     save(s);
+   }
+   const user=await request('user','GET',null,s.access_token);
+   if(!user.id)throw Error('Account could not be verified');
+   if(s.user_id && s.user_id!==user.id){
+     clear();
+     throw Error('Account changed. Please sign in again.');
+   }
+   s.user_id=user.id;
+   s.verified_email=user.email||s.verified_email||'';
+   save(s);
+   return user;
+ }catch(e){
+   // Connectivity failures must not erase a verified user's local session.
+   if(s.user_id && s.verified_email && (e instanceof TypeError || !navigator.onLine)){
+     return {id:s.user_id,email:s.verified_email,offline:true};
+   }
+   // Keep the local data even if an expired session needs a fresh login.
+   if(/invalid refresh token|refresh token not found|session expired|jwt expired/i.test(e.message||'')){
+     clear();
+     throw Error('Session expired. Please sign in again when online.');
+   }
+   throw e;
+ }
+}
 function validEmail(email){if(!email?.trim()||!email.includes('@'))throw Error('Enter a valid email address.');return email.trim()}
 function validPassword(p){if(!p||p.length<6)throw Error('Password must be at least 6 characters.')}
 window.hwAuth={
